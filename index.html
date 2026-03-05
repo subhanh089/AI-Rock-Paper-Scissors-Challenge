@@ -1,1 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
 
+<title>AI Rock Paper Scissors</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+
+<style>
+body{
+font-family:Arial;
+text-align:center;
+}
+
+#webcam-container{
+margin-top:20px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Rock Paper Scissors AI</h1>
+
+<button onclick="init()">Start Camera</button>
+
+<div id="webcam-container"></div>
+
+<h2>Your Move: <span id="playerMove">Waiting...</span></h2>
+<h2>Computer Move: <span id="computerMove">-</span></h2>
+<h2>Winner: <span id="winner">-</span></h2>
+
+<h3>Score</h3>
+<p>You: <span id="playerScore">0</span></p>
+<p>Computer: <span id="computerScore">0</span></p>
+
+<script>
+
+const URL = "https://teachablemachine.withgoogle.com/models/_g6xJqKtX/";
+
+let model, webcam, maxPredictions;
+
+let playerScore = 0;
+let computerScore = 0;
+
+// Load model and start webcam
+async function init() {
+
+const modelURL = URL + "model.json";
+const metadataURL = URL + "metadata.json";
+
+model = await tmImage.load(modelURL, metadataURL);
+maxPredictions = model.getTotalClasses();
+
+const flip = true;
+webcam = new tmImage.Webcam(300,300,flip);
+
+await webcam.setup();
+await webcam.play();
+
+window.requestAnimationFrame(loop);
+
+document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+}
+
+async function loop() {
+
+webcam.update();
+await predict();
+
+window.requestAnimationFrame(loop);
+
+}
+
+// Run the webcam image through the model
+async function predict() {
+
+const prediction = await model.predict(webcam.canvas);
+
+let highest = 0;
+let playerMove = "";
+
+// find the prediction with highest probability
+for (let i = 0; i < maxPredictions; i++) {
+
+if (prediction[i].probability > highest) {
+
+highest = prediction[i].probability;
+playerMove = prediction[i].className;
+
+}
+
+}
+
+document.getElementById("playerMove").innerText = playerMove;
+
+playGame(playerMove);
+
+}
+
+// Game logic
+function playGame(playerMove){
+
+const choices = ["Rock","Paper","Scissors"];
+
+const computerMove = choices[Math.floor(Math.random()*3)];
+
+document.getElementById("computerMove").innerText = computerMove;
+
+let result = "";
+
+if(playerMove === computerMove){
+
+result = "Tie";
+
+}
+
+else if(
+(playerMove === "Rock" && computerMove === "Scissors") ||
+(playerMove === "Paper" && computerMove === "Rock") ||
+(playerMove === "Scissors" && computerMove === "Paper")
+){
+
+result = "You Win!";
+playerScore++;
+
+}
+
+else{
+
+result = "Computer Wins";
+computerScore++;
+
+}
+
+document.getElementById("winner").innerText = result;
+
+document.getElementById("playerScore").innerText = playerScore;
+
+document.getElementById("computerScore").innerText = computerScore;
+
+}
+
+</script>
+
+</body>
+</html>
